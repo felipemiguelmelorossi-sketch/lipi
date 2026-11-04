@@ -14,18 +14,17 @@
 body {
     margin: 0;
     background: #080d19;
-    color: #fff;
+    color: white;
     font-family: Arial, sans-serif;
 }
 
 header {
-    height: 65px;
-    padding: 0 25px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 18px 25px;
     background: #101a2d;
     border-bottom: 1px solid #263650;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .logo {
@@ -53,7 +52,7 @@ h2 {
 
 textarea {
     width: 100%;
-    height: 390px;
+    height: 420px;
     resize: vertical;
     background: #101a2d;
     color: #b9e2ff;
@@ -75,30 +74,27 @@ button {
     background: #087cff;
     color: white;
     border: none;
-    padding: 13px 22px;
+    padding: 12px 22px;
     border-radius: 8px;
-    margin-top: 12px;
-    font-size: 14px;
     cursor: pointer;
     transition: 0.3s;
 }
 
-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px #087cff;
+#executar {
+    margin-top: 12px;
+    font-size: 14px;
 }
 
 #preview {
     background: white;
     color: black;
-    min-height: 390px;
+    min-height: 420px;
     border-radius: 10px;
     overflow: auto;
     padding: 20px;
 }
 
 #mensagem {
-    color: #65d99b;
     font-size: 13px;
     margin-top: 12px;
 }
@@ -122,68 +118,83 @@ footer {
 
 <header>
     <div class="logo">Lipi.</div>
-    <div class="status">Lipi Online</div>
+    <div class="status">Editor Online</div>
 </header>
 
 <main>
 
 <section>
-    <h2>Editor de código .lp</h2>
+    <h2>Editor .lp</h2>
 
 <textarea id="codigo" spellcheck="false">site "Meu primeiro site"
 fundo "#101020"
 cor_texto "#ffffff"
 titulo "Bem-vindo à Lipi!"
-texto "Estou criando meu primeiro site."
+texto "Meu primeiro site feito com Lipi."
+espacamento 20
+arredondar 16
 botao "Clique aqui"
 animacao crescer
-arredondar 16
 ao clicar:
     mostrar "Você executou a Lipi!"
 fim</textarea>
 
-<button onclick="executar()">▶ Executar Lipi</button>
+<button id="executar" type="button">▶ Executar Lipi</button>
 
 <div id="mensagem">Pronto para executar.</div>
 </section>
 
 <section>
-    <h2>Resultado</h2>
+    <h2>Pré-visualização</h2>
     <div id="preview"></div>
 </section>
 
 </main>
 
 <footer>
-    Lipi — Linguagem experimental de programação
+    Lipi — Sua linguagem, suas ideias.
 </footer>
 
 <script>
-function executar() {
+const codigo = document.getElementById("codigo");
+const preview = document.getElementById("preview");
+const mensagem = document.getElementById("mensagem");
 
-    const codigo = document.getElementById("codigo").value;
-    const preview = document.getElementById("preview");
-    const mensagem = document.getElementById("mensagem");
+function executar() {
 
     preview.replaceChildren();
 
-    let corFundo = "#ffffff";
-    let corTexto = "#000000";
     let animacao = "";
+    let espacamento = 20;
     let arredondamento = 0;
-    let mensagemBotao = "";
+    let ultimoBotao = null;
 
-    const linhas = codigo.split("\n");
+    const linhas = codigo.value.split("\n");
 
     function pegarTexto(linha, comando) {
-        return linha.slice(comando.length).trim().replace(/^["']|["']$/g, "");
+        return linha.slice(comando.length).trim()
+            .replace(/^["']|["']$/g, "");
     }
 
-    function criarElemento(tag, texto) {
+    function numero(valor, comando, maximo) {
+        const n = Number(pegarTexto(valor, comando));
+
+        if (!Number.isFinite(n) || n < 0 || n > maximo) {
+            throw new Error("Valor inválido em " + comando);
+        }
+
+        return n;
+    }
+
+    function criar(tag, texto) {
         const elemento = document.createElement(tag);
         elemento.textContent = texto;
         preview.appendChild(elemento);
         return elemento;
+    }
+
+    function corValida(cor) {
+        return CSS.supports("color", cor);
     }
 
     try {
@@ -197,58 +208,79 @@ function executar() {
             }
 
             if (linha.startsWith("site ")) {
-                preview.dataset.tipo = "site";
+                preview.dataset.nome = pegarTexto(linha, "site");
             }
 
             else if (linha.startsWith("fundo ")) {
-                corFundo = pegarTexto(linha, "fundo");
+                const cor = pegarTexto(linha, "fundo");
+
+                if (!corValida(cor)) {
+                    throw new Error("Cor de fundo inválida.");
+                }
+
+                preview.style.background = cor;
             }
 
             else if (linha.startsWith("cor_texto ")) {
-                corTexto = pegarTexto(linha, "cor_texto");
+                const cor = pegarTexto(linha, "cor_texto");
+
+                if (!corValida(cor)) {
+                    throw new Error("Cor do texto inválida.");
+                }
+
+                preview.style.color = cor;
             }
 
             else if (linha.startsWith("titulo ")) {
-                criarElemento("h1", pegarTexto(linha, "titulo"));
+                criar("h1", pegarTexto(linha, "titulo"));
             }
 
             else if (linha.startsWith("texto ")) {
-                criarElemento("p", pegarTexto(linha, "texto"));
+                criar("p", pegarTexto(linha, "texto"));
             }
 
             else if (linha.startsWith("botao ")) {
 
-                const botao = document.createElement("button");
-                botao.textContent = pegarTexto(linha, "botao");
+                ultimoBotao = criar(
+                    "button",
+                    pegarTexto(linha, "botao")
+                );
 
-                botao.style.background = "#087cff";
-                botao.style.color = "white";
-                botao.style.border = "none";
-                botao.style.padding = "12px 22px";
-                botao.style.cursor = "pointer";
-
-                preview.appendChild(botao);
-
-                if (mensagemBotao) {
-                    botao.addEventListener("click", () => {
-                        alert(mensagemBotao);
-                    });
-                }
+                ultimoBotao.type = "button";
+                ultimoBotao.style.margin = "5px";
             }
 
             else if (linha.startsWith("imagem ")) {
 
                 const url = pegarTexto(linha, "imagem");
 
-                if (!url.startsWith("https://")) {
-                    throw new Error("A imagem precisa usar um endereço HTTPS.");
+                let endereco;
+
+                try {
+                    endereco = new URL(url);
+                } catch {
+                    throw new Error("Endereço da imagem inválido.");
+                }
+
+                if (endereco.protocol !== "https:") {
+                    throw new Error("A imagem precisa usar HTTPS.");
                 }
 
                 const img = document.createElement("img");
-                img.src = url;
-                img.alt = "Imagem criada com Lipi";
+                img.src = endereco.href;
+                img.alt = "Imagem Lipi";
                 img.style.maxWidth = "100%";
+                img.style.display = "block";
+
                 preview.appendChild(img);
+            }
+
+            else if (linha.startsWith("espacamento ")) {
+                espacamento = numero(linha, "espacamento", 200);
+            }
+
+            else if (linha.startsWith("arredondar ")) {
+                arredondamento = numero(linha, "arredondar", 100);
             }
 
             else if (linha === "animacao crescer") {
@@ -259,20 +291,16 @@ function executar() {
                 animacao = "brilhar";
             }
 
-            else if (linha.startsWith("arredondar ")) {
-                arredondamento = Number(pegarTexto(linha, "arredondar"));
-
-                if (!Number.isFinite(arredondamento) ||
-                    arredondamento < 0 ||
-                    arredondamento > 100) {
-                    throw new Error("Valor inválido para arredondar.");
-                }
-            }
-
             else if (linha === "ao clicar:") {
 
-                let bloco = "";
+                if (!ultimoBotao) {
+                    throw new Error(
+                        "Crie um botao antes de usar ao clicar."
+                    );
+                }
+
                 let encontrouFim = false;
+                let mensagemClique = "";
 
                 for (let j = i + 1; j < linhas.length; j++) {
 
@@ -285,57 +313,54 @@ function executar() {
                     }
 
                     if (interna.startsWith("mostrar ")) {
-                        bloco = pegarTexto(interna, "mostrar");
+                        mensagemClique = pegarTexto(
+                            interna,
+                            "mostrar"
+                        );
+                    } else if (interna !== "") {
+                        throw new Error(
+                            "Comando inválido dentro de ao clicar."
+                        );
                     }
                 }
 
                 if (!encontrouFim) {
-                    throw new Error("Bloco ao clicar sem fim.");
+                    throw new Error("Está faltando o comando fim.");
                 }
 
-                mensagemBotao = bloco;
+                const botaoAtual = ultimoBotao;
+                const texto = mensagemClique;
 
-                const ultimoBotao = preview.querySelector("button");
-
-                if (ultimoBotao) {
-                    ultimoBotao.addEventListener("click", () => {
-                        alert(bloco);
-                    });
-                }
-            }
-
-            else if (linha === "jogo " || linha.startsWith("cenario ") ||
-                     linha.startsWith("chao ") || linha.startsWith("cubo ") ||
-                     linha === "jogador") {
-                throw new Error("A criação de jogos 3D ainda não está disponível neste editor.");
+                botaoAtual.addEventListener("click", function() {
+                    alert(texto);
+                });
             }
 
             else {
-                throw new Error("Comando não reconhecido: " + linha);
+                throw new Error("Comando desconhecido: " + linha);
             }
         }
 
-        preview.style.background = corFundo;
-        preview.style.color = corTexto;
+        preview.style.padding = espacamento + "px";
         preview.style.borderRadius = arredondamento + "px";
 
-        if (animacao === "crescer") {
-            preview.querySelectorAll("button").forEach(botao => {
-                botao.style.transition = "transform 0.3s";
+        preview.querySelectorAll("button").forEach(botao => {
+
+            if (animacao === "crescer") {
+
                 botao.addEventListener("mouseenter", () => {
                     botao.style.transform = "scale(1.12)";
                 });
+
                 botao.addEventListener("mouseleave", () => {
                     botao.style.transform = "scale(1)";
                 });
-            });
-        }
+            }
 
-        if (animacao === "brilhar") {
-            preview.querySelectorAll("button").forEach(botao => {
+            if (animacao === "brilhar") {
                 botao.style.boxShadow = "0 0 15px #168cff";
-            });
-        }
+            }
+        });
 
         mensagem.textContent = "Lipi executada com sucesso!";
         mensagem.style.color = "#65d99b";
@@ -344,10 +369,15 @@ function executar() {
 
         preview.replaceChildren();
 
-        mensagem.textContent = erro.message;
+        mensagem.textContent = "Erro: " + erro.message;
         mensagem.style.color = "#ff6868";
     }
 }
+
+document.getElementById("executar")
+    .addEventListener("click", executar);
+
+executar();
 </script>
 
 </body>
