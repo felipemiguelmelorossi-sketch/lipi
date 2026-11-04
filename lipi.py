@@ -1,260 +1,289 @@
+#!/usr/bin/env python3
+"""Lipi 0.2 - interpretador inicial para sites e cenas 3D."""
+from __future__ import annotations
 
-import re
+import argparse
 import html
+import re
+import sys
 from pathlib import Path
+from typing import List, Optional
 
-VERSION = "0.1"
+VERSION = "0.2.0"
+
+
+def value_of(raw: str) -> str:
+    raw = raw.strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
+        return raw[1:-1]
+    return raw
+
+
+def safe_color(value: str) -> str:
+    value = value_of(value)
+    if not re.fullmatch(r"#[0-9a-fA-F]{3,8}|[a-zA-Z]{1,24}|rgba?\([0-9.,% ]+\)", value):
+        raise ValueError(f"cor inválida: {value}")
+    return value
+
+
+class LipiError(Exception):
+    pass
+
 
 class Lipi:
     def __init__(self):
-        self.output = []
-        self.mode = None
+        self.mode: Optional[str] = None
         self.title = "Projeto Lipi"
         self.background = "#101020"
-        self.elements = []
+        self.text_color = "#ffffff"
+        self.elements: List[str] = []
+        self.styles: List[str] = []
+        self.scripts: List[str] = []
+        self.game_objects: List[str] = []
+        self.click_action: Optional[str] = None
 
-    def executar(self, codigo):
-        self.output = []
-        self.elements = []
-        self.mode = None
-        self.title = "Projeto Lipi"
-        self.background = "#101020"
+    def reset(self):
+        self.__init__()
 
-        for numero, linha in enumerate(codigo.splitlines(), 1):
-            linha = linha.strip()
+    def compile_file(self, source: Path, output: Optional[Path] = None) -> Path:
+        try:
+            code = source.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise LipiError(f"não consegui ler {source}: {exc}") from exc
+        return self.compile(code, output or source.with_suffix(".html"))
 
-            if not linha or linha.startswith("#"):
+    def compile(self, code: str, output: Path) -> Path:
+        self.reset()
+        lines = code.splitlines()
+        in_click = False
+        click_lines: List[str] = []
+
+        for number, original in enumerate(lines, 1):
+            line = original.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            if in_click:
+                if line.lower() == "fim":
+                    self.click_action = "\n".join(click_lines)
+                    in_click = False
+                    click_lines = []
+                else:
+                    click_lines.append(line)
+                continue
+
+            if line.lower() == "ao clicar:":
+                in_click = True
                 continue
 
             try:
-                self.comando(linha)
-            except Exception as erro:
-                print(f"Erro na linha {numero}: {erro}")
-                return False
+                self.parse_line(line)
+            except (ValueError, LipiError) as exc:
+                raise LipiError(f"linha {number}: {exc}") from exc
 
-        self.gerar()
-        return True
+        if in_click:
+            raise LipiError("bloco 'ao clicar:' sem 'fim'.")
 
-    def comando(self, linha):
-        partes = linha.split(maxsplit=1)
-        nome = partes[0].lower()
-        valor = partes[1].strip() if len(partes) > 1 else ""
+        if self.mode not in ("site", "jogo"):
+            raise LipiError("comece o arquivo com: site \"Nome\" ou jogo \"Nome\".")
 
-        if nome == "site":
-            self.mode = "site"
-            self.title = self.limpar(valor)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        document = self.render_site() if self.mode == "site" else self.render_game()
+        output.write_text(document, encoding="utf-8")
+        return output
 
-        elif nome == "jogo":
-            self.mode = "jogo"
-            self.title = self.limpar(valor)
+    def parse_line(self, line: str):
+        parts = line.split(maxsplit=1)
+        command = parts[0].lower()
+        arg = parts[1].strip() if len(parts) > 1 else ""
 
-        elif nome == "fundo":
-            self.background = self.limpar(valor)
-
-        elif nome == "titulo":
-            self.elements.append(
-                f"<h1>{html.escape(self.limpar(valor))}</h1>"
-            )
-
-        elif nome == "texto":
-            self.elements.append(
-                f"<p>{html.escape(self.limpar(valor))}</p>"
-            )
-
-        elif nome == "botao":
-            self.elements.append(
-                f'<button onclick="alert(\'Olá da Lipi!\')">'
-                f'{html.escape(self.limpar(valor))}</button>'
-            )
-
-        elif nome == "imagem":
-            url = self.limpar(valor)
-            if not url.startswith(("https://", "http://")):
-                raise ValueError("URL de imagem inválida")
-            self.elements.append(
-                f'<img src="{html.escape(url, quote=True)}" '
-                'style="max-width:100%;border-radius:12px">'
-            )
-
-        elif nome == "jogador":
-            self.elements.append(
-                '<div id="player"></div>'
-            )
-
-        elif nome == "cubo":
-            dados = valor.split()
-            if len(dados) < 4:
-                raise ValueError("Use: cubo X Y Z cor")
-            x, y, z = map(float, dados[:3])
-            cor = dados[3]
-            self.elements.append(
-                f'<lipi-cube x="{x}" y="{y}" z="{z}" '
-                f'color="{html.escape(cor, quote=True)}"></lipi-cube>'
-            )
-
-        elif nome == "chao":
-            self.elements.append(
-                f'<lipi-ground color="{html.escape(self.limpar(valor), quote=True)}"></lipi-ground>'
-            )
-
-        elif nome == "cenario":
-            self.elements.append(
-                f'<lipi-sky color="{html.escape(self.limpar(valor), quote=True)}"></lipi-sky>'
-            )
-
-        elif nome == "fim":
-            self.gerar()
-
-        else:
-            raise ValueError(f"Comando desconhecido: {nome}")
-
-    def limpar(self, valor):
-        valor = valor.strip()
-        if len(valor) >= 2 and valor[0] == valor[-1] and valor[0] in ('"', "'"):
-            return valor[1:-1]
-        return valor
-
-    def gerar(self):
-        if not self.mode:
+        if command in ("site", "jogo"):
+            if self.mode is not None:
+                raise LipiError("use apenas um comando inicial: site ou jogo.")
+            self.mode = command
+            self.title = value_of(arg) if arg else "Projeto Lipi"
             return
 
-        if self.mode == "site":
-            conteudo = "\n".join(self.elements)
-            documento = f"""<!DOCTYPE html>
+        if self.mode is None:
+            raise LipiError("o primeiro comando deve ser site ou jogo.")
+
+        if command == "fundo":
+            self.background = safe_color(arg)
+        elif command == "cor_texto":
+            self.text_color = safe_color(arg)
+        elif command == "titulo":
+            self.elements.append(f"<h1>{html.escape(value_of(arg))}</h1>")
+        elif command == "texto":
+            self.elements.append(f"<p>{html.escape(value_of(arg))}</p>")
+        elif command == "botao":
+            label = html.escape(value_of(arg))
+            self.elements.append(f'<button class="lipi-button" id="lipi-action">{label}</button>')
+        elif command == "imagem":
+            url = value_of(arg)
+            if not re.match(r"^https://", url):
+                raise ValueError("imagem deve usar um endereço HTTPS.")
+            self.elements.append(
+                f'<img class="lipi-image" src="{html.escape(url, quote=True)}" alt="Imagem do projeto">'
+            )
+        elif command == "espacamento":
+            self.styles.append(f".lipi-content{{gap:{int(arg)}px}}")
+        elif command == "arredondar":
+            self.styles.append(f".lipi-button{{border-radius:{int(arg)}px}}")
+        elif command == "animacao":
+            effect = value_of(arg).lower()
+            if effect == "crescer":
+                self.styles.append(".lipi-button:hover{transform:scale(1.07)}")
+            elif effect == "brilhar":
+                self.styles.append(".lipi-button:hover{box-shadow:0 0 22px #3994ff}")
+            else:
+                raise ValueError("animação disponível: crescer ou brilhar.")
+        elif command == "cenario":
+            if self.mode != "jogo":
+                raise ValueError("'cenario' só pode ser usado em jogo.")
+            self.background = safe_color(arg)
+        elif command == "chao":
+            if self.mode != "jogo":
+                raise ValueError("'chao' só pode ser usado em jogo.")
+            self.game_objects.append(
+                f"addGround({json_string(safe_color(arg))});"
+            )
+        elif command == "cubo":
+            if self.mode != "jogo":
+                raise ValueError("'cubo' só pode ser usado em jogo.")
+            values = arg.split()
+            if len(values) != 4:
+                raise ValueError('use: cubo X Y Z cor (ex.: cubo 0 1 0 azul)')
+            x, y, z = (float(v) for v in values[:3])
+            color = safe_color(values[3])
+            self.game_objects.append(
+                f"addCube({x}, {y}, {z}, {json_string(color)});"
+            )
+        elif command == "jogador":
+            if self.mode != "jogo":
+                raise ValueError("'jogador' só pode ser usado em jogo.")
+            self.game_objects.append("addPlayer();")
+        elif command == "fim":
+            return
+        else:
+            raise ValueError(f"comando desconhecido: {command}")
+
+    def render_site(self) -> str:
+        click_js = ""
+        if self.click_action:
+            # Na primeira versão, o bloco aceita apenas mostrar "mensagem".
+            match = re.fullmatch(r"""mostrar\s+(['"])(.*?)\1""", self.click_action, re.S)
+            if not match:
+                raise LipiError("por enquanto, 'ao clicar' aceita: mostrar \"mensagem\".")
+            click_js = "alert(" + json_string(match.group(2)) + ");"
+
+        styles = "\n".join(self.styles)
+        body = "\n".join(self.elements)
+        action = ""
+        if click_js:
+            action = f"""const button = document.getElementById('lipi-action');
+if (button) button.addEventListener('click', () => {{ {click_js} }});"""
+        return f"""<!doctype html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(self.title)}</title>
 <style>
-* {{ box-sizing: border-box; }}
-body {{
-    margin: 0;
-    padding: 40px 20px;
-    min-height: 100vh;
-    background: {self.background};
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-}}
-h1 {{ font-size: 42px; }}
-p {{ font-size: 19px; color: #ccc; }}
-button {{
-    padding: 14px 25px;
-    border: 0;
-    border-radius: 10px;
-    background: #087cff;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: .2s;
-}}
-button:hover {{ transform: scale(1.06); }}
+*{{box-sizing:border-box}}
+body{{margin:0;min-height:100vh;padding:48px 20px;background:{self.background};
+color:{self.text_color};font-family:Arial,sans-serif}}
+.lipi-content{{max-width:900px;margin:auto;display:flex;flex-direction:column;
+align-items:center;gap:18px;text-align:center}}
+h1{{font-size:clamp(30px,5vw,52px);margin:0}}
+p{{font-size:18px;line-height:1.6;color:inherit}}
+.lipi-button{{padding:14px 26px;border:0;border-radius:12px;background:#1677ff;
+color:white;font-size:16px;cursor:pointer;transition:transform .2s,box-shadow .2s}}
+.lipi-image{{max-width:min(100%,700px);height:auto;border-radius:14px}}
+{styles}
 </style>
 </head>
 <body>
-{conteudo}
+<main class="lipi-content">
+{body}
+</main>
+<script>{action}</script>
 </body>
 </html>"""
-            Path("index.html").write_text(documento, encoding="utf-8")
-            print("Site criado: index.html")
 
-        elif self.mode == "jogo":
-            conteudo = "\n".join(self.elements)
-            documento = f"""<!DOCTYPE html>
+    def render_game(self) -> str:
+        objects = "\n".join(self.game_objects)
+        return f"""<!doctype html>
 <html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(self.title)}</title>
-<style>
-body {{ margin: 0; overflow: hidden; }}
-canvas {{ display: block; }}
-</style>
+<style>html,body{{margin:0;width:100%;height:100%;overflow:hidden}}canvas{{display:block}}</style>
 </head>
 <body>
 <script type="module">
-import * as THREE from
-'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-
-const cena = new THREE.Scene();
-cena.background = new THREE.Color('#87ceeb');
-
-const camera = new THREE.PerspectiveCamera(
-  75, innerWidth / innerHeight, 0.1, 1000
-);
-camera.position.set(5, 5, 8);
-camera.lookAt(0, 0, 0);
-
-const render = new THREE.WebGLRenderer({{antialias:true}});
-render.setSize(innerWidth, innerHeight);
-document.body.appendChild(render.domElement);
-
-cena.add(new THREE.HemisphereLight(0xffffff, 0x555555, 2));
-
-const luz = new THREE.DirectionalLight(0xffffff, 2);
-luz.position.set(5, 10, 5);
-cena.add(luz);
-
-function cubo(x,y,z,cor) {{
-  const geo = new THREE.BoxGeometry(1,1,1);
-  const mat = new THREE.MeshStandardMaterial({{color:cor}});
-  const obj = new THREE.Mesh(geo,mat);
-  obj.position.set(x,y,z);
-  cena.add(obj);
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+const scene = new THREE.Scene();
+scene.background = new THREE.Color({json_string(self.background)});
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
+camera.position.set(5,5,8); camera.lookAt(0,0,0);
+const renderer = new THREE.WebGLRenderer({{antialias:true}});
+renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x555555,2));
+const light = new THREE.DirectionalLight(0xffffff,2); light.position.set(4,8,5); scene.add(light);
+function addCube(x,y,z,color) {{
+ const mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
+ new THREE.MeshStandardMaterial({{color}}));
+ mesh.position.set(x,y,z); scene.add(mesh);
 }}
-
-function chao(cor) {{
-  const geo = new THREE.PlaneGeometry(100,100);
-  const mat = new THREE.MeshStandardMaterial({{color:cor}});
-  const obj = new THREE.Mesh(geo,mat);
-  obj.rotation.x = -Math.PI/2;
-  obj.position.y = -0.5;
-  cena.add(obj);
+function addGround(color) {{
+ const mesh = new THREE.Mesh(new THREE.PlaneGeometry(100,100),
+ new THREE.MeshStandardMaterial({{color}}));
+ mesh.rotation.x=-Math.PI/2; mesh.position.y=-0.51; scene.add(mesh);
 }}
-
-function ceu(cor) {{
-  cena.background = new THREE.Color(cor);
+function addPlayer() {{
+ const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.35,0.8,4,8),
+ new THREE.MeshStandardMaterial({{color:'#ffcc33'}}));
+ mesh.position.y=0.2; scene.add(mesh);
 }}
-
-const comandos = document.querySelectorAll('lipi-cube, lipi-ground, lipi-sky');
-comandos.forEach(el => {{
-  if (el.tagName === 'LIPI-CUBE') {{
-    cubo(Number(el.getAttribute('x')), Number(el.getAttribute('y')),
-      Number(el.getAttribute('z')), el.getAttribute('color'));
-  }}
-  if (el.tagName === 'LIPI-GROUND') chao(el.getAttribute('color'));
-  if (el.tagName === 'LIPI-SKY') ceu(el.getAttribute('color'));
-}});
-
-function animar() {{
-  requestAnimationFrame(animar);
-  render.render(cena,camera);
-}}
-animar();
-
-addEventListener('resize', () => {{
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  render.setSize(innerWidth, innerHeight);
-}});
+{objects}
+function animate() {{ requestAnimationFrame(animate); renderer.render(scene,camera); }}
+animate();
+addEventListener('resize',()=>{{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);}});
 </script>
 </body>
 </html>"""
-            Path("index.html").write_text(documento, encoding="utf-8")
-            print("Jogo 3D criado: index.html")
+
+
+def json_string(value: str) -> str:
+    import json
+    return json.dumps(value, ensure_ascii=False)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Compilador inicial da linguagem Lipi.")
+    parser.add_argument("arquivo", nargs="?", help="arquivo .lp para compilar")
+    parser.add_argument("-o", "--saida", help="arquivo HTML de saída")
+    parser.add_argument("--versao", action="version", version=f"Lipi {VERSION}")
+    args = parser.parse_args()
+
+    if not args.arquivo:
+        parser.print_help()
+        return 2
+
+    source = Path(args.arquivo)
+    if source.suffix.lower() != ".lp":
+        print("Erro: os programas Lipi devem terminar em .lp", file=sys.stderr)
+        return 2
+
+    output = Path(args.saida) if args.saida else source.with_suffix(".html")
+    try:
+        result = Lipi().compile_file(source, output)
+    except (LipiError, OSError, ValueError) as exc:
+        print(f"Erro Lipi: {exc}", file=sys.stderr)
+        return 1
+    print(f"Lipi {VERSION}: arquivo criado em {result}")
+    return 0
 
 
 if __name__ == "__main__":
-    print(f"Lipi {VERSION}")
-    print("Digite o código Lipi. Digite SAIR para encerrar.")
-    linhas = []
-
-    while True:
-        linha = input("Lipi > ")
-        if linha.strip().upper() == "SAIR":
-            break
-        linhas.append(linha)
-
-    codigo = "\n".join(linhas)
-    Lipi().executar(codigo)
+    raise SystemExit(main())
