@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lipi Editor</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #0b1020;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 25px;
+}
+
+h1 {
+    color: #42a5ff;
+}
+
+textarea {
+    width: 100%;
+    height: 300px;
+    background: #151d32;
+    color: #7dd3fc;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 15px;
+    resize: vertical;
+}
+
+button {
+    background: #087cff;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 12px;
+}
+
+#resultado {
+    background: white;
+    color: black;
+    min-height: 150px;
+    margin-top: 15px;
+    border-radius: 10px;
+    padding: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Lipi Editor</h1>
+<p>Escreva seus programas na linguagem Lipi.</p>
+
+<textarea id="codigo">site "Meu primeiro site"
+fundo "#101020"
+titulo "Olá, mundo!"
+texto "Estou programando com Lipi."
+</textarea>
+
+<br>
+
+<button onclick="executar()">Executar Lipi</button>
+
+<div id="resultado"></div>
+
+<script>
+function executar() {
+    const codigo = document.getElementById("codigo").value;
+    const resultado = document.getElementById("resultado");
+
+    resultado.innerHTML = "";
+
+    const linhas = codigo.split("\n");
+
+    for (let linha of linhas) {
+        linha = linha.trim();
+
+        if (linha.startsWith("titulo ")) {
+            const texto = linha.slice(7).replaceAll('"', "");
+            const h1 = document.createElement("h1");
+            h1.textContent = texto;
+            resultado.appendChild(h1);
+        }
+
+        if (linha.startsWith("texto ")) {
+            const texto = linha.slice(6).replaceAll('"', "");
+            const p = document.createElement("p");
+            p.textContent = texto;
+            resultado.appendChild(p);
+        }
+
+        if (linha.startsWith("fundo ")) {
+            const cor = linha.slice(6).replaceAll('"', "");
+            resultado.style.background = cor;
+            resultado.style.color = "white";
+        }
+    }
+}
+</script>
+
+</body>
+</html>
