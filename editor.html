@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lipi Editor</title>
+<title>Lipi — Editor Online</title>
 
 <style>
 * {
@@ -12,97 +13,339 @@
 
 body {
     margin: 0;
-    background: #0b1020;
-    color: white;
+    background: #080d19;
+    color: #fff;
     font-family: Arial, sans-serif;
-    padding: 25px;
 }
 
-h1 {
-    color: #42a5ff;
+header {
+    height: 65px;
+    padding: 0 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #101a2d;
+    border-bottom: 1px solid #263650;
+}
+
+.logo {
+    color: #38a5ff;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.status {
+    color: #65d99b;
+    font-size: 13px;
+}
+
+main {
+    padding: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+h2 {
+    font-size: 17px;
+    color: #8fcaff;
 }
 
 textarea {
     width: 100%;
-    height: 300px;
-    background: #151d32;
-    color: #7dd3fc;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    padding: 15px;
-    font-size: 15px;
+    height: 390px;
     resize: vertical;
+    background: #101a2d;
+    color: #b9e2ff;
+    border: 1px solid #294568;
+    border-radius: 10px;
+    padding: 18px;
+    font-family: Consolas, monospace;
+    font-size: 15px;
+    outline: none;
+    line-height: 1.6;
+}
+
+textarea:focus {
+    border-color: #168cff;
+    box-shadow: 0 0 12px #087cff55;
 }
 
 button {
     background: #087cff;
     color: white;
     border: none;
-    padding: 12px 25px;
+    padding: 13px 22px;
     border-radius: 8px;
+    margin-top: 12px;
+    font-size: 14px;
     cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px #087cff;
+}
+
+#preview {
+    background: white;
+    color: black;
+    min-height: 390px;
+    border-radius: 10px;
+    overflow: auto;
+    padding: 20px;
+}
+
+#mensagem {
+    color: #65d99b;
+    font-size: 13px;
     margin-top: 12px;
 }
 
-#resultado {
-    background: white;
-    color: black;
-    min-height: 150px;
-    margin-top: 15px;
-    border-radius: 10px;
-    padding: 15px;
+footer {
+    padding: 20px;
+    text-align: center;
+    color: #64748b;
+    font-size: 12px;
+}
+
+@media(max-width: 750px) {
+    main {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<h1>Lipi Editor</h1>
-<p>Escreva seus programas na linguagem Lipi.</p>
+<header>
+    <div class="logo">Lipi.</div>
+    <div class="status">Lipi Online</div>
+</header>
 
-<textarea id="codigo">site "Meu primeiro site"
+<main>
+
+<section>
+    <h2>Editor de código .lp</h2>
+
+<textarea id="codigo" spellcheck="false">site "Meu primeiro site"
 fundo "#101020"
-titulo "Olá, mundo!"
-texto "Estou programando com Lipi."
-</textarea>
+cor_texto "#ffffff"
+titulo "Bem-vindo à Lipi!"
+texto "Estou criando meu primeiro site."
+botao "Clique aqui"
+animacao crescer
+arredondar 16
+ao clicar:
+    mostrar "Você executou a Lipi!"
+fim</textarea>
 
-<br>
+<button onclick="executar()">▶ Executar Lipi</button>
 
-<button onclick="executar()">Executar Lipi</button>
+<div id="mensagem">Pronto para executar.</div>
+</section>
 
-<div id="resultado"></div>
+<section>
+    <h2>Resultado</h2>
+    <div id="preview"></div>
+</section>
+
+</main>
+
+<footer>
+    Lipi — Linguagem experimental de programação
+</footer>
 
 <script>
 function executar() {
-    const codigo = document.getElementById("codigo").value;
-    const resultado = document.getElementById("resultado");
 
-    resultado.innerHTML = "";
+    const codigo = document.getElementById("codigo").value;
+    const preview = document.getElementById("preview");
+    const mensagem = document.getElementById("mensagem");
+
+    preview.replaceChildren();
+
+    let corFundo = "#ffffff";
+    let corTexto = "#000000";
+    let animacao = "";
+    let arredondamento = 0;
+    let mensagemBotao = "";
 
     const linhas = codigo.split("\n");
 
-    for (let linha of linhas) {
-        linha = linha.trim();
+    function pegarTexto(linha, comando) {
+        return linha.slice(comando.length).trim().replace(/^["']|["']$/g, "");
+    }
 
-        if (linha.startsWith("titulo ")) {
-            const texto = linha.slice(7).replaceAll('"', "");
-            const h1 = document.createElement("h1");
-            h1.textContent = texto;
-            resultado.appendChild(h1);
+    function criarElemento(tag, texto) {
+        const elemento = document.createElement(tag);
+        elemento.textContent = texto;
+        preview.appendChild(elemento);
+        return elemento;
+    }
+
+    try {
+
+        for (let i = 0; i < linhas.length; i++) {
+
+            const linha = linhas[i].trim();
+
+            if (!linha || linha.startsWith("#")) {
+                continue;
+            }
+
+            if (linha.startsWith("site ")) {
+                preview.dataset.tipo = "site";
+            }
+
+            else if (linha.startsWith("fundo ")) {
+                corFundo = pegarTexto(linha, "fundo");
+            }
+
+            else if (linha.startsWith("cor_texto ")) {
+                corTexto = pegarTexto(linha, "cor_texto");
+            }
+
+            else if (linha.startsWith("titulo ")) {
+                criarElemento("h1", pegarTexto(linha, "titulo"));
+            }
+
+            else if (linha.startsWith("texto ")) {
+                criarElemento("p", pegarTexto(linha, "texto"));
+            }
+
+            else if (linha.startsWith("botao ")) {
+
+                const botao = document.createElement("button");
+                botao.textContent = pegarTexto(linha, "botao");
+
+                botao.style.background = "#087cff";
+                botao.style.color = "white";
+                botao.style.border = "none";
+                botao.style.padding = "12px 22px";
+                botao.style.cursor = "pointer";
+
+                preview.appendChild(botao);
+
+                if (mensagemBotao) {
+                    botao.addEventListener("click", () => {
+                        alert(mensagemBotao);
+                    });
+                }
+            }
+
+            else if (linha.startsWith("imagem ")) {
+
+                const url = pegarTexto(linha, "imagem");
+
+                if (!url.startsWith("https://")) {
+                    throw new Error("A imagem precisa usar um endereço HTTPS.");
+                }
+
+                const img = document.createElement("img");
+                img.src = url;
+                img.alt = "Imagem criada com Lipi";
+                img.style.maxWidth = "100%";
+                preview.appendChild(img);
+            }
+
+            else if (linha === "animacao crescer") {
+                animacao = "crescer";
+            }
+
+            else if (linha === "animacao brilhar") {
+                animacao = "brilhar";
+            }
+
+            else if (linha.startsWith("arredondar ")) {
+                arredondamento = Number(pegarTexto(linha, "arredondar"));
+
+                if (!Number.isFinite(arredondamento) ||
+                    arredondamento < 0 ||
+                    arredondamento > 100) {
+                    throw new Error("Valor inválido para arredondar.");
+                }
+            }
+
+            else if (linha === "ao clicar:") {
+
+                let bloco = "";
+                let encontrouFim = false;
+
+                for (let j = i + 1; j < linhas.length; j++) {
+
+                    const interna = linhas[j].trim();
+
+                    if (interna === "fim") {
+                        encontrouFim = true;
+                        i = j;
+                        break;
+                    }
+
+                    if (interna.startsWith("mostrar ")) {
+                        bloco = pegarTexto(interna, "mostrar");
+                    }
+                }
+
+                if (!encontrouFim) {
+                    throw new Error("Bloco ao clicar sem fim.");
+                }
+
+                mensagemBotao = bloco;
+
+                const ultimoBotao = preview.querySelector("button");
+
+                if (ultimoBotao) {
+                    ultimoBotao.addEventListener("click", () => {
+                        alert(bloco);
+                    });
+                }
+            }
+
+            else if (linha === "jogo " || linha.startsWith("cenario ") ||
+                     linha.startsWith("chao ") || linha.startsWith("cubo ") ||
+                     linha === "jogador") {
+                throw new Error("A criação de jogos 3D ainda não está disponível neste editor.");
+            }
+
+            else {
+                throw new Error("Comando não reconhecido: " + linha);
+            }
         }
 
-        if (linha.startsWith("texto ")) {
-            const texto = linha.slice(6).replaceAll('"', "");
-            const p = document.createElement("p");
-            p.textContent = texto;
-            resultado.appendChild(p);
+        preview.style.background = corFundo;
+        preview.style.color = corTexto;
+        preview.style.borderRadius = arredondamento + "px";
+
+        if (animacao === "crescer") {
+            preview.querySelectorAll("button").forEach(botao => {
+                botao.style.transition = "transform 0.3s";
+                botao.addEventListener("mouseenter", () => {
+                    botao.style.transform = "scale(1.12)";
+                });
+                botao.addEventListener("mouseleave", () => {
+                    botao.style.transform = "scale(1)";
+                });
+            });
         }
 
-        if (linha.startsWith("fundo ")) {
-            const cor = linha.slice(6).replaceAll('"', "");
-            resultado.style.background = cor;
-            resultado.style.color = "white";
+        if (animacao === "brilhar") {
+            preview.querySelectorAll("button").forEach(botao => {
+                botao.style.boxShadow = "0 0 15px #168cff";
+            });
         }
+
+        mensagem.textContent = "Lipi executada com sucesso!";
+        mensagem.style.color = "#65d99b";
+
+    } catch (erro) {
+
+        preview.replaceChildren();
+
+        mensagem.textContent = erro.message;
+        mensagem.style.color = "#ff6868";
     }
 }
 </script>
