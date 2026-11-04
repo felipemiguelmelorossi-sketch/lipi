@@ -1,0 +1,8 @@
+site "Meu primeiro site"
+
+fundo "#101020"
+titulo "Bem-vindo à Lipi!"
+texto "Meu primeiro site feito com minha linguagem."
+botao "Entrar"
+
+fim
