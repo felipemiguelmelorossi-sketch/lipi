@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lipi — Editor Online</title>
+<title>Lipi Studio</title>
 
 <style>
 * {
@@ -13,102 +13,257 @@
 
 body {
     margin: 0;
-    background: #080d19;
-    color: white;
+    background: #1e1e1e;
+    color: #cccccc;
     font-family: Arial, sans-serif;
+    overflow: hidden;
 }
 
 header {
-    padding: 18px 25px;
-    background: #101a2d;
-    border-bottom: 1px solid #263650;
+    height: 42px;
+    background: #181818;
+    border-bottom: 1px solid #333;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
 }
 
 .logo {
-    color: #38a5ff;
-    font-size: 25px;
+    color: #42a5ff;
+    font-size: 19px;
     font-weight: bold;
 }
 
-.status {
-    color: #65d99b;
-    font-size: 13px;
-}
-
-main {
-    padding: 25px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-h2 {
-    font-size: 17px;
-    color: #8fcaff;
-}
-
-textarea {
-    width: 100%;
-    height: 420px;
-    resize: vertical;
-    background: #101a2d;
-    color: #b9e2ff;
-    border: 1px solid #294568;
-    border-radius: 10px;
-    padding: 18px;
-    font-family: Consolas, monospace;
-    font-size: 15px;
-    outline: none;
-    line-height: 1.6;
-}
-
-textarea:focus {
-    border-color: #168cff;
-    box-shadow: 0 0 12px #087cff55;
-}
-
-button {
-    background: #087cff;
-    color: white;
-    border: none;
-    padding: 12px 22px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-#executar {
-    margin-top: 12px;
-    font-size: 14px;
-}
-
-#preview {
-    background: white;
-    color: black;
-    min-height: 420px;
-    border-radius: 10px;
-    overflow: auto;
-    padding: 20px;
-}
-
-#mensagem {
-    font-size: 13px;
-    margin-top: 12px;
-}
-
-footer {
-    padding: 20px;
-    text-align: center;
-    color: #64748b;
+header span {
+    color: #888;
     font-size: 12px;
 }
 
-@media(max-width: 750px) {
-    main {
-        grid-template-columns: 1fr;
+.workspace {
+    display: flex;
+    height: calc(100vh - 66px);
+}
+
+.activity {
+    width: 48px;
+    background: #181818;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 15px;
+    gap: 25px;
+    color: #888;
+}
+
+.activity div {
+    font-size: 19px;
+}
+
+.sidebar {
+    width: 190px;
+    background: #181818;
+    border-right: 1px solid #333;
+    padding: 15px 10px;
+}
+
+.sidebar h3 {
+    font-size: 11px;
+    font-weight: normal;
+    color: #999;
+    letter-spacing: 1px;
+}
+
+.file {
+    padding: 9px;
+    background: #252526;
+    color: #ddd;
+    font-size: 13px;
+    border-radius: 3px;
+    margin-top: 10px;
+}
+
+.file::before {
+    content: "◇ ";
+    color: #42a5ff;
+}
+
+.main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab {
+    height: 38px;
+    background: #181818;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    border-bottom: 1px solid #333;
+    font-size: 13px;
+}
+
+.tab span {
+    color: #42a5ff;
+    margin-right: 7px;
+}
+
+.toolbar {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    gap: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.toolbar button {
+    border: none;
+    border-radius: 4px;
+    padding: 7px 13px;
+    cursor: pointer;
+    color: white;
+}
+
+.run {
+    background: #16834b;
+}
+
+.run:hover {
+    background: #20a45f;
+}
+
+.download {
+    background: #333;
+}
+
+.editor-area {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    background: #1e1e1e;
+}
+
+.numbers {
+    width: 43px;
+    padding: 15px 10px;
+    text-align: right;
+    color: #858585;
+    background: #1e1e1e;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    overflow: hidden;
+    user-select: none;
+}
+
+textarea {
+    flex: 1;
+    min-width: 0;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #9cdcfe;
+    padding: 15px 10px;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    tab-size: 4;
+    white-space: pre;
+    overflow: auto;
+}
+
+.bottom {
+    height: 24px;
+    background: #007acc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 11px;
+    color: white;
+}
+
+.preview {
+    width: 38%;
+    min-width: 220px;
+    background: #181818;
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-title {
+    padding: 13px;
+    font-size: 12px;
+    color: #aaa;
+    border-bottom: 1px solid #333;
+}
+
+#resultado {
+    flex: 1;
+    background: white;
+    color: black;
+    margin: 10px;
+    padding: 20px;
+    overflow: auto;
+    border-radius: 4px;
+}
+
+.terminal {
+    height: 95px;
+    background: #181818;
+    border-top: 1px solid #333;
+    padding: 10px 15px;
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    overflow: auto;
+}
+
+.terminal-title {
+    color: #aaa;
+    margin-bottom: 10px;
+}
+
+#mensagem {
+    color: #65d99b;
+}
+
+@media(max-width: 800px) {
+    .sidebar {
+        display: none;
+    }
+
+    .preview {
+        width: 35%;
+        min-width: 150px;
+    }
+
+    .activity {
+        width: 38px;
+    }
+}
+
+@media(max-width: 550px) {
+    .workspace {
+        flex-direction: column;
+    }
+
+    .activity {
+        display: none;
+    }
+
+    .preview {
+        width: 100%;
+        height: 35%;
+    }
+
+    .main {
+        min-height: 60%;
     }
 }
 </style>
@@ -117,16 +272,38 @@ footer {
 <body>
 
 <header>
-    <div class="logo">Lipi.</div>
-    <div class="status">Editor Online</div>
+    <div class="logo">Lipi Studio</div>
+    <span>Editor de programação</span>
 </header>
 
-<main>
+<div class="workspace">
 
-<section>
-    <h2>Editor .lp</h2>
+    <aside class="activity">
+        <div>▤</div>
+        <div>⌕</div>
+        <div>⚙</div>
+    </aside>
 
-<textarea id="codigo" spellcheck="false">site "Meu primeiro site"
+    <aside class="sidebar">
+        <h3>EXPLORADOR</h3>
+        <div class="file">editor.lp</div>
+    </aside>
+
+    <section class="main">
+
+        <div class="tab">
+            <span>◇</span> editor.lp
+        </div>
+
+        <div class="toolbar">
+            <button class="run" onclick="executar()">▶ Executar</button>
+            <button class="download" onclick="baixar()">↓ Baixar .lp</button>
+        </div>
+
+        <div class="editor-area">
+            <div class="numbers" id="numeros">1</div>
+
+            <textarea id="codigo" spellcheck="false">site "Meu primeiro site"
 fundo "#101020"
 cor_texto "#ffffff"
 titulo "Bem-vindo à Lipi!"
@@ -138,63 +315,98 @@ animacao crescer
 ao clicar:
     mostrar "Você executou a Lipi!"
 fim</textarea>
+        </div>
 
-<button id="executar" type="button">▶ Executar Lipi</button>
+        <div class="terminal">
+            <div class="terminal-title">TERMINAL</div>
+            <div id="mensagem">Lipi Studio iniciado.</div>
+        </div>
 
-<div id="mensagem">Pronto para executar.</div>
-</section>
+    </section>
 
-<section>
-    <h2>Pré-visualização</h2>
-    <div id="preview"></div>
-</section>
+    <section class="preview">
+        <div class="preview-title">PRÉ-VISUALIZAÇÃO</div>
+        <div id="resultado"></div>
+    </section>
 
-</main>
+</div>
 
-<footer>
-    Lipi — Sua linguagem, suas ideias.
-</footer>
+<div class="bottom">
+    <span>● Lipi Studio</span>
+    <span>UTF-8 | .lp</span>
+</div>
 
 <script>
 const codigo = document.getElementById("codigo");
-const preview = document.getElementById("preview");
+const resultado = document.getElementById("resultado");
 const mensagem = document.getElementById("mensagem");
+const numeros = document.getElementById("numeros");
+
+function atualizarNumeros() {
+    const quantidade = codigo.value.split("\n").length;
+    numeros.textContent = Array.from(
+        {length: quantidade},
+        (_, i) => i + 1
+    ).join("\n");
+}
+
+codigo.addEventListener("input", atualizarNumeros);
+
+codigo.addEventListener("scroll", () => {
+    numeros.scrollTop = codigo.scrollTop;
+});
+
+codigo.addEventListener("keydown", function(event) {
+    if (event.key === "Tab") {
+        event.preventDefault();
+
+        const inicio = this.selectionStart;
+        const fim = this.selectionEnd;
+
+        this.value =
+            this.value.substring(0, inicio) +
+            "    " +
+            this.value.substring(fim);
+
+        this.selectionStart = this.selectionEnd = inicio + 4;
+
+        atualizarNumeros();
+    }
+});
+
+function pegarTexto(linha, comando) {
+    return linha.slice(comando.length).trim()
+        .replace(/^["']|["']$/g, "");
+}
 
 function executar() {
 
-    preview.replaceChildren();
+    resultado.replaceChildren();
 
     let animacao = "";
     let espacamento = 20;
     let arredondamento = 0;
     let ultimoBotao = null;
+    let corFundo = "#ffffff";
+    let corTexto = "#000000";
 
     const linhas = codigo.value.split("\n");
-
-    function pegarTexto(linha, comando) {
-        return linha.slice(comando.length).trim()
-            .replace(/^["']|["']$/g, "");
-    }
-
-    function numero(valor, comando, maximo) {
-        const n = Number(pegarTexto(valor, comando));
-
-        if (!Number.isFinite(n) || n < 0 || n > maximo) {
-            throw new Error("Valor inválido em " + comando);
-        }
-
-        return n;
-    }
 
     function criar(tag, texto) {
         const elemento = document.createElement(tag);
         elemento.textContent = texto;
-        preview.appendChild(elemento);
+        resultado.appendChild(elemento);
         return elemento;
     }
 
-    function corValida(cor) {
-        return CSS.supports("color", cor);
+    function numero(linha, comando, maximo) {
+        const valor = Number(pegarTexto(linha, comando));
+
+        if (!Number.isFinite(valor) || valor < 0 || valor > maximo) {
+            throw new Error("Valor inválido em " + comando);
+        }
+
+        return valor;
     }
 
     try {
@@ -203,32 +415,26 @@ function executar() {
 
             const linha = linhas[i].trim();
 
-            if (!linha || linha.startsWith("#")) {
-                continue;
-            }
+            if (!linha || linha.startsWith("#")) continue;
 
             if (linha.startsWith("site ")) {
-                preview.dataset.nome = pegarTexto(linha, "site");
+                resultado.dataset.nome = pegarTexto(linha, "site");
             }
 
             else if (linha.startsWith("fundo ")) {
-                const cor = pegarTexto(linha, "fundo");
+                corFundo = pegarTexto(linha, "fundo");
 
-                if (!corValida(cor)) {
+                if (!CSS.supports("color", corFundo)) {
                     throw new Error("Cor de fundo inválida.");
                 }
-
-                preview.style.background = cor;
             }
 
             else if (linha.startsWith("cor_texto ")) {
-                const cor = pegarTexto(linha, "cor_texto");
+                corTexto = pegarTexto(linha, "cor_texto");
 
-                if (!corValida(cor)) {
+                if (!CSS.supports("color", corTexto)) {
                     throw new Error("Cor do texto inválida.");
                 }
-
-                preview.style.color = cor;
             }
 
             else if (linha.startsWith("titulo ")) {
@@ -240,26 +446,24 @@ function executar() {
             }
 
             else if (linha.startsWith("botao ")) {
-
-                ultimoBotao = criar(
-                    "button",
-                    pegarTexto(linha, "botao")
-                );
-
+                ultimoBotao = criar("button", pegarTexto(linha, "botao"));
                 ultimoBotao.type = "button";
-                ultimoBotao.style.margin = "5px";
+                ultimoBotao.style.padding = "12px 20px";
+                ultimoBotao.style.background = "#087cff";
+                ultimoBotao.style.color = "white";
+                ultimoBotao.style.border = "none";
+                ultimoBotao.style.borderRadius = "6px";
+                ultimoBotao.style.cursor = "pointer";
             }
 
             else if (linha.startsWith("imagem ")) {
-
                 const url = pegarTexto(linha, "imagem");
-
                 let endereco;
 
                 try {
                     endereco = new URL(url);
                 } catch {
-                    throw new Error("Endereço da imagem inválido.");
+                    throw new Error("Endereço de imagem inválido.");
                 }
 
                 if (endereco.protocol !== "https:") {
@@ -270,9 +474,7 @@ function executar() {
                 img.src = endereco.href;
                 img.alt = "Imagem Lipi";
                 img.style.maxWidth = "100%";
-                img.style.display = "block";
-
-                preview.appendChild(img);
+                resultado.appendChild(img);
             }
 
             else if (linha.startsWith("espacamento ")) {
@@ -294,16 +496,13 @@ function executar() {
             else if (linha === "ao clicar:") {
 
                 if (!ultimoBotao) {
-                    throw new Error(
-                        "Crie um botao antes de usar ao clicar."
-                    );
+                    throw new Error("Crie um botao antes de ao clicar.");
                 }
 
+                let texto = "";
                 let encontrouFim = false;
-                let mensagemClique = "";
 
                 for (let j = i + 1; j < linhas.length; j++) {
-
                     const interna = linhas[j].trim();
 
                     if (interna === "fim") {
@@ -313,14 +512,9 @@ function executar() {
                     }
 
                     if (interna.startsWith("mostrar ")) {
-                        mensagemClique = pegarTexto(
-                            interna,
-                            "mostrar"
-                        );
+                        texto = pegarTexto(interna, "mostrar");
                     } else if (interna !== "") {
-                        throw new Error(
-                            "Comando inválido dentro de ao clicar."
-                        );
+                        throw new Error("Comando inválido dentro do bloco.");
                     }
                 }
 
@@ -328,12 +522,7 @@ function executar() {
                     throw new Error("Está faltando o comando fim.");
                 }
 
-                const botaoAtual = ultimoBotao;
-                const texto = mensagemClique;
-
-                botaoAtual.addEventListener("click", function() {
-                    alert(texto);
-                });
+                ultimoBotao.addEventListener("click", () => alert(texto));
             }
 
             else {
@@ -341,13 +530,14 @@ function executar() {
             }
         }
 
-        preview.style.padding = espacamento + "px";
-        preview.style.borderRadius = arredondamento + "px";
+        resultado.style.background = corFundo;
+        resultado.style.color = corTexto;
+        resultado.style.padding = espacamento + "px";
+        resultado.style.borderRadius = arredondamento + "px";
 
-        preview.querySelectorAll("button").forEach(botao => {
+        resultado.querySelectorAll("button").forEach(botao => {
 
             if (animacao === "crescer") {
-
                 botao.addEventListener("mouseenter", () => {
                     botao.style.transform = "scale(1.12)";
                 });
@@ -362,21 +552,30 @@ function executar() {
             }
         });
 
-        mensagem.textContent = "Lipi executada com sucesso!";
+        mensagem.textContent = "> Lipi executada com sucesso!";
         mensagem.style.color = "#65d99b";
 
     } catch (erro) {
-
-        preview.replaceChildren();
-
-        mensagem.textContent = "Erro: " + erro.message;
+        resultado.replaceChildren();
+        mensagem.textContent = "> ERRO: " + erro.message;
         mensagem.style.color = "#ff6868";
     }
 }
 
-document.getElementById("executar")
-    .addEventListener("click", executar);
+function baixar() {
+    const arquivo = new Blob([codigo.value], {
+        type: "text/plain;charset=utf-8"
+    });
 
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(arquivo);
+    link.download = "meu-projeto.lp";
+    link.click();
+
+    URL.revokeObjectURL(link.href);
+}
+
+atualizarNumeros();
 executar();
 </script>
 
